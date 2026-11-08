@@ -1,0 +1,42 @@
+{
+  "$schema": "https://glama.ai/mcp/schema/v1.json",
+  "name": "safemigrate-mcp",
+  "title": "SafeMigrate MCP Guard",
+  "description": "Deterministic AST migration analyzer and zero-downtime SQL rewriter for PostgreSQL and MySQL. Prevents ACCESS EXCLUSIVE locks and full table rewrites during autonomous coding agent execution.",
+  "transport": {
+    "type": "sse",
+    "url": "https://safemigrate-mcp.fly.dev/mcp",
+    "auth": {
+      "type": "bearer",
+      "header": "Authorization",
+      "placeholder": "polar_live_YOUR_LICENSE_KEY"
+    }
+  },
+  "capabilities": {
+    "tools": [
+      {
+        "name": "analyze_migration",
+        "description": "Analyzes raw SQL DDL for blocking locks (ACCESS EXCLUSIVE, SHARE ROW EXCLUSIVE), table rewrites, and concurrency risks."
+      },
+      {
+        "name": "rewrite_zero_downtime",
+        "description": "Rewrites unsafe migrations into concurrent, zero-downtime SQL operations."
+      },
+      {
+        "name": "check_rollback_safety",
+        "description": "Cross-analyzes forward (UP) and rollback (DOWN) migration scripts for irreversible data loss."
+      }
+    ]
+  },
+  "categories": [
+    "developer-tools",
+    "database"
+  ],
+  "tags": [
+    "postgres",
+    "mysql",
+    "migrations",
+    "concurrency",
+    "lock-guard"
+  ]
+}

@@ -1,0 +1,1 @@
+"""SafeMigrate MCP test suite."""

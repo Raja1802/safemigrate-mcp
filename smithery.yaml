@@ -1,0 +1,30 @@
+name: safemigrate-mcp
+displayName: SafeMigrate MCP Guard
+description: AST-based zero-downtime database migration guard and auto-rewriter for PostgreSQL and MySQL. Prevents AI coding agents from table-locking production databases.
+version: 0.1.0
+license: MIT
+repository: https://github.com/raja1802/safemigrate-mcp
+homepage: https://github.com/raja1802/safemigrate-mcp
+icon: https://raw.githubusercontent.com/raja1802/safemigrate-mcp/main/assets/icon.png
+keywords:
+  - postgresql
+  - mysql
+  - database
+  - migrations
+  - zero-downtime
+  - guardrails
+  - cursor
+  - developer-tools
+runtime: python
+entrypoint: src/server/main.py
+build:
+  dockerfile: Dockerfile
+config:
+  type: object
+  properties:
+    polarApiKey:
+      type: string
+      title: SafeMigrate License Key
+      description: Your Polar.sh license key (prefix polar_live_). Obtain one from polar.sh.
+      x-from:
+        header: Authorization

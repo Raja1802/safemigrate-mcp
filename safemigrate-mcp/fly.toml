@@ -1,0 +1,41 @@
+# Fly.io deployment configuration for SafeMigrate MCP
+app = "safemigrate-mcp"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[deploy]
+  strategy = "rolling"
+
+[env]
+  HOST = "0.0.0.0"
+  PORT = "8000"
+  TRANSPORT = "sse"
+  POLAR_API_URL = "https://api.polar.sh/v1"
+  TOKEN_CACHE_TTL_SECONDS = "300"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 200
+    hard_limit = 250
+
+  [[http_service.checks]]
+    interval = "10s"
+    timeout = "2s"
+    grace_period = "5s"
+    method = "GET"
+    path = "/health"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
