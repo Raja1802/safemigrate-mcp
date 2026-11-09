@@ -88,6 +88,18 @@ def test_local_fallback_token_bypass():
         assert res.status_code != 401
 
 
+def test_query_parameter_authentication():
+    """Verify that credentials passed via query parameters (token, key, license_key, customer_session_token) authenticate."""
+    app = create_asgi_app()
+    with TestClient(app) as client:
+        for param in ["token", "key", "license_key", "customer_session_token"]:
+            res = client.post(
+                f"/mcp?{param}=test-token-123",
+                json={"jsonrpc": "2.0", "method": "ping", "id": 1},
+            )
+            assert res.status_code != 401, f"Failed authentication for query param {param}"
+
+
 def test_polar_license_validation_granted():
     """Verify successful token validation via Polar.sh API when status is 'granted'."""
     import asyncio

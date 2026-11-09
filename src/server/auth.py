@@ -1,16 +1,15 @@
-"""Authentication middleware for SafeMigrate MCP supporting Polar.sh licensing and TTL caching."""
-
+"""Authentication middleware for SafeMigrate MCP supporting Polar.sh licensing, TTL caching, and query param tokens."""
 import json
 import time
 from typing import Iterable
+from urllib.parse import parse_qs
 import httpx
 from starlette.types import ASGIApp, Receive, Scope, Send
-
 from src.config import config
 
 
 class BearerAuthMiddleware:
-    """ASGI middleware verifying Bearer tokens via local bypass and Polar.sh license keys with TTL caching."""
+    """ASGI middleware verifying tokens via local bypass and Polar.sh license keys with TTL caching."""
 
     def __init__(
         self,
@@ -29,8 +28,6 @@ class BearerAuthMiddleware:
         self.cache_ttl_seconds = (
             cache_ttl_seconds if cache_ttl_seconds is not None else config.TOKEN_CACHE_TTL_SECONDS
         )
-
-        # In-memory TTL cache: token -> (is_valid, expire_timestamp)
         self.token_cache: dict[str, tuple[bool, float]] = {}
 
     async def validate_token(self, token: str) -> bool:
@@ -38,7 +35,7 @@ class BearerAuthMiddleware:
         if not token:
             return False
 
-        # 1. Local static bypass check (internal development, testing, admin)
+        # 1. Local static bypass check (internal dev, admin tokens)
         if token in self.valid_tokens:
             return True
 
@@ -57,7 +54,6 @@ class BearerAuthMiddleware:
                 "key": token,
                 "organization_id": self.polar_org_id,
             }
-
             try:
                 async with httpx.AsyncClient(timeout=10.0) as client:
                     response = await client.post(url, json=payload)
@@ -69,7 +65,6 @@ class BearerAuthMiddleware:
             except Exception:
                 is_valid = False
 
-            # Cache the result with configured TTL
             self.token_cache[token] = (is_valid, current_time + self.cache_ttl_seconds)
             return is_valid
 
@@ -102,13 +97,28 @@ class BearerAuthMiddleware:
             await self.app(scope, receive, send)
             return
 
-        # Extract Authorization header from raw ASGI headers
+        token: str | None = None
+
+        # Strategy 1: Extract Authorization header from raw ASGI headers
         headers = dict(scope.get("headers", []))
         auth_raw = headers.get(b"authorization", b"").decode("latin-1").strip()
-
-        authorized = False
         if auth_raw.startswith("Bearer "):
             token = auth_raw[7:].strip()
+
+        # Strategy 2: Fallback to query parameters
+        if not token:
+            query_string = scope.get("query_string", b"").decode("latin-1")
+            if query_string:
+                params = parse_qs(query_string)
+                token = (
+                    params.get("token", [None])[0]
+                    or params.get("key", [None])[0]
+                    or params.get("license_key", [None])[0]
+                    or params.get("customer_session_token", [None])[0]
+                )
+
+        authorized = False
+        if token:
             authorized = await self.validate_token(token)
 
         if not authorized:
